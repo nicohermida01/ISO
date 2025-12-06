@@ -78,3 +78,10 @@
   - `-i`: Solicita confirmación antes de sobrescribir archivos existentes.
   - `-v`: Muestra los archivos a medida que se mueven.
   - `-n`: No sobrescribe archivos existentes.
+
+- `id`: Muestra el ID de usuario (UID) y el ID de grupo (GID) del usuario actual o de un usuario especificado. Parametros comunes incluyen:
+
+  - `-u`: Muestra solo el UID.
+  - `-g`: Muestra solo el GID.
+  - `-G`: Muestra todos los GIDs del usuario.
+  - `-n`: Muestra nombres en lugar de números.

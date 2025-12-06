@@ -1074,3 +1074,50 @@ done
 > Para obtener el directorio actual utilizamos `*`, que representa todos los archivos y directorios en el directorio actual.
 
 > Para obtener el subdirectorio "bin" dentro del directorio HOME del usuario actual, utilizamos la variable de entorno `$HOME`, que contiene la ruta al directorio home del usuario que está ejecutando el script. Concatenamos esta ruta con "/bin" para formar la ruta completa al subdirectorio "bin".
+
+## Ejercicio extra: modelo parcial
+
+Escriba un script en bash que reciba como argumento una lista de nombres de usuario (debe validar que se reciba al menos uno), y para cada uno
+de los usuarios VALIDOS que se hayan recibido deberá imprimir un reporte con la siguiente información:
+
+- Nombre de usuario
+- Ruta al directorio personal, solo si el usuario tiene directorio personal configurado y éste existe.
+- Cantidad de archivos (no directorios) en su directorio personal. Debera informar 0 si el usuario no posee directorio personal o no existe.
+
+```bash
+#!/bin/bash
+if [ $# -lt 1 ]; then
+  echo "Error: uso del script: $0 usuario1 [usuario2 ... usuarioN]"
+  exit 1
+fi
+for usuario in "$@"; do
+  if id "$usuario" &>/dev/null; then
+    echo "Reporte para el usuario: $usuario"
+    dir_home=$(getent passwd "$usuario" | cut -d: -f6)
+    if [ -d "$dir_home" ]; then
+      echo "Directorio personal: $dir_home"
+      cantidad_archivos=$(find "$dir_home" -type f 2>/dev/null | wc -l)
+      echo "Cantidad de archivos en el directorio personal: $cantidad_archivos"
+    else
+      echo "El usuario no tiene un directorio personal configurado o no existe."
+      echo "Cantidad de archivos en el directorio personal: 0"
+    fi
+    echo "-----------------------------------"
+  else
+    echo "El usuario '$usuario' no es válido."
+    echo "-----------------------------------"
+  fi
+done
+```
+
+> **"$@"**: Representa todos los argumentos pasados al script como una lista.
+> **id "$usuario" &>/dev/null**: Verifica si el usuario existe en el sistema. Redirige toda la salida (tanto estándar como de error) a /dev/null para evitar mostrar mensajes en pantalla. if id "$usuario" &>/dev/null; then evalúa a verdadero si el usuario existe.
+> **getent passwd "$usuario" | cut -d: -f6\*\*: Obtiene la ruta del directorio personal del usuario desde la base de datos de usuarios del sistema. El comando `getent passwd` devuelve la entrada completa del usuario en formato de archivo passwd, y `cut -d: -f6` extrae el sexto campo, que corresponde al directorio home del usuario.
+> **find "$dir_home" -type f 2>/dev/null | wc -l**: Cuenta la cantidad de archivos regulares en el directorio personal del usuario. El comando `find` busca todos los archivos (`-type f`) en el directorio especificado, y `wc -l` cuenta las líneas de la salida, que corresponde al número de archivos encontrados. La redirección `2>/dev/null` se utiliza para ignorar cualquier mensaje de error que pueda surgir si el directorio no existe o no se puede acceder a él.
+
+Indique como se deberia ejecutar su script (asuma que el archivo se llama reporte.sh) para que la salida del mismo se guarde en un archivo llamado
+reporte.txt dentro del directorio personal del usuario que ejecuta el script, sobreescribiendo cualquier contenido que el mismo puediera tener.
+
+```bash
+./reporte.sh usuario1 usuario2 usuario3 > "$HOME/reporte.txt"
+```
