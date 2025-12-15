@@ -848,21 +848,43 @@ done
 
 ## 24. Script usuarios.sh
 
-Realice un script que agregue en un arreglo todos los nombres de los usuarios
-del sistema pertenecientes al grupo “users”. Adicionalmente el script puede
-recibir como parámetro:
-➢ “-b n”: Retorna el elemento de la posición n del arreglo si el mismo
-existe. Caso contrario, un mensaje de error.
-➢ “-l”: Devuelve la longitud del arreglo
-➢ “-i”: Imprime todos los elementos del arreglo en pantalla
-
 ```bash
 #!/bin/bash
 grupo="users"
 usuarios=($(getent group $grupo | awk -F: '{print $4}' | tr ',' ' '))
 
 if [ $# -eq 0 ]; then
-  echo "Uso del script: $0 [-b n | -l | -i]"
+  echo "Erro: uso del script: $0 [-b n | -l | -i]"
   exit 1
 fi
+
+opcion=$1
+
+case $opcion in
+  -b)
+    if [ $# -ne 2 ]; then
+      echo "Error: uso del script: $0 -b n"
+      exit 1
+    fi
+    pos=$2
+    if [ ${#usuarios[@]} -ge $(( pos + 1 )) ]; then
+      echo "Usuario en la posición $pos: ${usuarios[pos]}"
+    else
+      echo "Error: posición inválida."
+      exit 1
+    fi
+    ;;
+  -l)
+    echo "Cantidad de usuarios: ${#usuarios[@]}"
+    ;;
+  -i)
+    for user in ${usuarios[@]}; do
+      echo "$user"
+    done
+    ;;
+  *)
+    echo "Error: uso del script: $0 [-b n | -l | -i]"
+    exit 1
+    ;;
+esac
 ```
