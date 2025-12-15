@@ -888,3 +888,258 @@ case $opcion in
     ;;
 esac
 ```
+
+> getent group $grupo: Obtiene la entrada del grupo "users" desde la base de datos de grupos del sistema.
+> awk -F: '{print $4}': Utiliza `awk` para extraer el cuarto campo de la salida, que contiene los nombres de los usuarios separados por comas.
+> tr ',' ' ': Utiliza `tr` para reemplazar las comas por espacios, facilitando la conversión a un arreglo.
+
+## 25. Script parametros.sh
+
+Escriba un script que reciba una cantidad desconocida de parámetros al
+momento de su invocación (debe validar que al menos se reciba uno). Cada
+parámetro representa la ruta absoluta de un archivo o directorio en el sistema. El
+script deberá iterar por todos los parámetros recibidos, y solo para aquellos
+parámetros que se encuentren en posiciones impares (el primero, el tercero, el
+verificar si el archivo o directorio existen en el sistema, imprimiendo en pantalla
+que tipo de objeto es (archivo o directorio). Además, deberá informar la cantidad
+de archivos o directorios inexistentes en el sistema.
+
+```bash
+#!/bin/bash
+if [ $# -lt 1 ]; then
+  echo "Error: uso del script: $0 dir1 [dir2 ... dirN]"
+  exit 1
+fi
+inexistentes=0
+for (( i=1; i<=$#; i+=2 )); do
+  parametro=${!i}
+  if [ -e "$parametro" ]; then
+    if [ -f "$parametro" ]; then
+      echo "$parametro es un archivo."
+    elif [ -d "$parametro" ]; then
+      echo "$parametro es un directorio."
+    fi
+  else
+    echo "$parametro no existe."
+    inexistentes=$((inexistentes + 1))
+  fi
+done
+echo "Cantidad de archivos o directorios inexistentes: $inexistentes"
+```
+
+> Usamos `${!i}` para acceder al i-ésimo parámetro pasado al script.
+
+## 26. Script arreglos.sh
+
+```bash
+#!/bin/bash
+array=()
+inicializar() {
+  array=()
+}
+agregar_elem() {
+  array+=($1)
+}
+eliminar_elem() {
+  if [ $1 -ge 0 ] && [ $1 -lt ${#array[@]} ]; then
+    unset array[$1]
+    array=("${array[@]}") # Reindexar el arreglo
+  else
+    echo "Posición inválida."
+  fi
+}
+longitud() {
+  echo "${#array[@]}"
+}
+imprimir() {
+  for elem in "${array[@]}"; do
+    echo "$elem"
+  done
+}
+inicializar_Con_Valores() {
+  inicializar
+  for (( i=0; i<$1; i++ )); do
+    array+=($2)
+  done
+}
+```
+
+## 27. Script directorio.sh
+
+```bash
+#!/bin/bash
+
+if [ $# -eq 0 ]; then
+  echo "Error: no se pasaron parametros"
+  echo "Uso del script: $0 <directorio>"
+  exit 1
+fi
+
+dir=$1
+archivos_rw=0
+
+if [ -d $dir ]; then
+  for archivo in "$dir"/*; do
+    if [ -f $archivo ]; then
+      if [[ -r $archivo && -w $archivo ]]; then
+        echo $archivo
+        archivos_rw=$(( archivos_rw + 1 ))
+      else
+        echo "El archivo $archivo no tiene permisos de lectura y escritura"
+      fi
+    else
+      echo "El archivo $archivo no es un archivo regular"
+    fi
+  done
+else
+  echo "El directorio no existe o el path no corresponde a un directorio"
+  exit 4
+fi
+
+echo "Cantidad de archivos con permisos de lectura y escritura: $archivos_rw"
+```
+
+> -r y -w son opciones del comando test (o [ ]) que verifican si un archivo tiene permisos de lectura y escritura, respectivamente. Estos validan los permisos del usuario que ejecuta el script sobre el archivo especificado. Por lo tanto, no es necesario hacer una logica adicional para verificar si el usuario es el propietario del archivo.
+
+> Al pasar un directorio como parametro, escribiendo "$dir"/\* podemos iterar sobre todos los archivos y subdirectorios dentro de ese directorio.
+
+## 28. Script home.sh
+
+```bash
+#!/bin/bash
+archivos_doc=()
+for archivo in /home/*.doc; do
+  if [ -f "$archivo" ]; then
+    archivos_doc+=("$archivo")
+  fi
+done
+verArchivo() {
+  if [ $# -lt 1 ]; then
+    echo "Error: no se paso el nombre del archivo"
+    exit 1
+  else
+    flag=0
+    for archivo in ${archivos_doc[@]}; do
+      nombre_archivo=${basename $archivo}
+      if [ $nombre_archivo -eq $archivo ]; then
+        flag=1
+      fi
+    done
+
+    if [ $flag -eq 1 ]; then
+      cat $archivo
+    else
+      echo "Error: Archivo no encontrado"
+      exit 5
+    fi
+  fi
+}
+cantidadArchivos() {
+  echo "Cantidad de archivos .doc en /home: ${#archivos_doc[@]}"
+}
+borrarArchivo() {
+  if [ $# -lt 1 ]; then
+    echo "Error: no se paso el nombre del archivo"
+    exit 1
+  else
+    flag=0
+    for i in ${!archivos_doc[@]}; do
+      nombre_archivo=${basename ${archivos_doc[i]}}
+      if [ $nombre_archivo -eq $1 ]; then
+        flag=1
+        indice=$i
+      fi
+    done
+
+    if [ $flag -eq 1 ]; then
+      read -p "¿Desea eliminar el archivo lógicamente? (Si/No): " respuesta
+      if [ "$respuesta" == "Si" ]; then
+        unset archivos_doc[$indice]
+        archivos_doc=("${archivos_doc[@]}") # Reindexar el arreglo
+      elif [ "$respuesta" == "No" ]; then
+        rm "${archivos_doc[$indice]}"
+        unset archivos_doc[$indice]
+        archivos_doc=("${archivos_doc[@]}") # Reindexar el arreglo
+      else
+        echo "Respuesta inválida. Use 'Si' o 'No'."
+      fi
+    else
+      echo "Error: Archivo no encontrado"
+      exit 10
+    fi
+  fi
+}
+
+```
+
+## 29. Script programas.sh
+
+```bash
+#!/bin/bash
+directorio_bin="$HOME/bin"
+if [ ! -d "$directorio_bin" ]; then
+  mkdir "$directorio_bin"
+fi
+
+contador=0
+for archivo in *; do
+  if [[ -f $archivo && -x $archivo ]]; then
+    mv "$archivo" "$directorio_bin/"
+    echo "Movido: $archivo"
+    contador=$((contador + 1))
+  fi
+done
+```
+
+> Para saber si un archivo es ejecutable, se utiliza la opción `-x` del comando `test` (o `[ ]`). Esta opción verifica si el archivo tiene permisos de ejecución para el usuario que ejecuta el script.
+
+> Para obtener el directorio actual utilizamos `*`, que representa todos los archivos y directorios en el directorio actual.
+
+> Para obtener el subdirectorio "bin" dentro del directorio HOME del usuario actual, utilizamos la variable de entorno `$HOME`, que contiene la ruta al directorio home del usuario que está ejecutando el script. Concatenamos esta ruta con "/bin" para formar la ruta completa al subdirectorio "bin".
+
+## Ejercicio extra: modelo parcial
+
+Escriba un script en bash que reciba como argumento una lista de nombres de usuario (debe validar que se reciba al menos uno), y para cada uno
+de los usuarios VALIDOS que se hayan recibido deberá imprimir un reporte con la siguiente información:
+
+- Nombre de usuario
+- Ruta al directorio personal, solo si el usuario tiene directorio personal configurado y éste existe.
+- Cantidad de archivos (no directorios) en su directorio personal. Debera informar 0 si el usuario no posee directorio personal o no existe.
+
+```bash
+#!/bin/bash
+if [ $# -lt 1 ]; then
+  echo "Error: uso del script: $0 usuario1 [usuario2 ... usuarioN]"
+  exit 1
+fi
+for usuario in "$@"; do
+  if id "$usuario" &>/dev/null; then
+    echo "Reporte para el usuario: $usuario"
+    dir_home=$(getent passwd "$usuario" | cut -d: -f6)
+    if [ -d "$dir_home" ]; then
+      echo "Directorio personal: $dir_home"
+      cantidad_archivos=$(find "$dir_home" -type f 2>/dev/null | wc -l)
+      echo "Cantidad de archivos en el directorio personal: $cantidad_archivos"
+    else
+      echo "El usuario no tiene un directorio personal configurado o no existe."
+      echo "Cantidad de archivos en el directorio personal: 0"
+    fi
+    echo "-----------------------------------"
+  else
+    echo "El usuario '$usuario' no es válido."
+    echo "-----------------------------------"
+  fi
+done
+```
+
+> **"$@"**: Representa todos los argumentos pasados al script como una lista.
+> **id "$usuario" &>/dev/null**: Verifica si el usuario existe en el sistema. Redirige toda la salida (tanto estándar como de error) a /dev/null para evitar mostrar mensajes en pantalla. if id "$usuario" &>/dev/null; then evalúa a verdadero si el usuario existe.
+> **getent passwd "$usuario" | cut -d: -f6\*\*: Obtiene la ruta del directorio personal del usuario desde la base de datos de usuarios del sistema. El comando `getent passwd` devuelve la entrada completa del usuario en formato de archivo passwd, y `cut -d: -f6` extrae el sexto campo, que corresponde al directorio home del usuario.
+> **find "$dir_home" -type f 2>/dev/null | wc -l**: Cuenta la cantidad de archivos regulares en el directorio personal del usuario. El comando `find` busca todos los archivos (`-type f`) en el directorio especificado, y `wc -l` cuenta las líneas de la salida, que corresponde al número de archivos encontrados. La redirección `2>/dev/null` se utiliza para ignorar cualquier mensaje de error que pueda surgir si el directorio no existe o no se puede acceder a él.
+
+Indique como se deberia ejecutar su script (asuma que el archivo se llama reporte.sh) para que la salida del mismo se guarde en un archivo llamado
+reporte.txt dentro del directorio personal del usuario que ejecuta el script, sobreescribiendo cualquier contenido que el mismo puediera tener.
+
+```bash
+./reporte.sh usuario1 usuario2 usuario3 > "$HOME/reporte.txt"
+```
