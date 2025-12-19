@@ -1143,3 +1143,38 @@ reporte.txt dentro del directorio personal del usuario que ejecuta el script, so
 ```bash
 ./reporte.sh usuario1 usuario2 usuario3 > "$HOME/reporte.txt"
 ```
+
+## Ejercicio extra: modelo parcial 2
+
+Realice un script en bash que cada 1 hora busque en cada directorio HOME (y sus subdirectorios) de cada usuario del sistema a ver si dentro de la misma el usuario contiene un archivo cuyo nombre es igual al parametro que debe recibir el script. En caso de encontrarse esta situacion, se debe registrar en un archivo de log llamado "archivo-encontrado-<PARAMETRO>.log" (ubicado en el directorio correspondiente segun FHS) el full path del archivo encontrado. <PARAMETRO> representa el valor del parametro que recibe el script. La ejecucion del script finaliza, retornando el codigo 0, una vez que se encontro al menos 10 veces el nombre del archivo entre todos los HOME de usuario. Se debe validar que el script recibe un unico parametro (que es el nombre del archivo a buscar) y en caso contrario debe imprimir un mensaje de error correspondiente y finalizar con el codigo de eror 2.
+
+```bash
+#!/bin/bash
+if [ $# -ne 1 ]; then
+  echo "Error: uso del script: $0 nombre_archivo"
+  exit 2
+fi
+
+nombre_archivo=$1
+log_file="/var/log/archivo-encontrado-$nombre_archivo.log" # Segun FHS, los logs del sistema se encuentran en /var/log
+contador=0
+
+while [ $contador -lt 10 ]; do
+  for usuario in /home/*; do
+    if [ -d "$usuario" ]; then
+      resultados=$(find "$usuario" -type f -name "$nombre_archivo" 2>/dev/null) # 2>/dev/null redirige los mensajes de error a /dev/null. Resultados contendrá las rutas completas de los archivos encontrados
+
+      for archivo in $resultados; do
+        echo "$archivo" >> "$log_file" # >> sirve para agregar al final del archivo (concatenar), en cambio, > sobreescribe el archivo
+        contador=$((contador + 1))
+        if [ $contador -ge 10 ]; then
+          break 2 # Usamos el valor 2 para salir de ambos bucles for.
+        fi
+      done
+    fi
+  done
+  sleep 3600 # sleep permite pausar la ejecucion del script por la cantidad de segundos indicada, en este caso 1 hora (3600 segundos)
+done
+
+exit 0
+```
